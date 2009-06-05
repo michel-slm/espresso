@@ -1,0 +1,12 @@
+Espresso: S-expr for LLVM
+=========================
+
+Espresso is an S-expression-based functional programming language, and
+a compiler for that language, currently being prototyped. It is
+influenced by the Lisp family of languages (the s-expr syntax), as
+well as ML and Haskell (single assignment, type inferencing,
+modification only allowed for reference types).
+
+The compiler will compile Espresso source files into LLVM IR, which is
+a high-level assembly language with SSA. llc (the LLVM compiler) can
+then be used to compile down to native code on several platforms.
