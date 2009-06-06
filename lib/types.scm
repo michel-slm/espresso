@@ -8,3 +8,9 @@
     (and (list? expr)
          (equal? (car expr) 'if)
          (= (length expr) 4))))
+
+(define prim?
+  (lambda (x)
+    (case x
+      ((fx+ fx-) #t)
+      (else #f))))

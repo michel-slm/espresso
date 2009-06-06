@@ -12,7 +12,7 @@
 #define btrue  0x9f
 #define bfalse boolean_tag
 
-#define empty_list 0x2f
+#define nil 0x2f
 #define pair_mask  3
 #define pair_tag   1
 

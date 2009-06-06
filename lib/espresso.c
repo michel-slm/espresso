@@ -45,7 +45,7 @@ void display(int32_t val) {
     printf("%d", (val >> 2));
   } else if (pairp(val)) {
     display_pair(val);
-  } else if (val == empty_list) {
+  } else if (val == nil) {
     printf("()");
   } else if (booleanp(val)) {
     display_boolean(val);
@@ -67,7 +67,7 @@ void display_pair(int32_t val) {
     display(car(x));
     x = cdr(x);
   }
-  if (x != empty_list) {
+  if (x != nil) {
     printf(" . ");
     display(x);
   }
@@ -75,13 +75,6 @@ void display_pair(int32_t val) {
 }
 
 int32_t main() {
-  int32_t x = 42 << 2;
-  int32_t y = 7 << 2;
-  display(x);
-  printf("\n");
-  int32_t p = cons(x, cons(y, cons(btrue, cons(bfalse, empty_list))));
-  display(p);
-  printf("\n");
   display(espresso_main());  
   printf("\n");
 }

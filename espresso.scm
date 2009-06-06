@@ -1,6 +1,7 @@
 (load "lib/constants.scm")
 (load "lib/types.scm")
 (load "lib/assemble.scm")
+(load "lib/utils.scm")
 
 (define passes)
 
@@ -24,16 +25,23 @@
           (loop (cdr passes) ((eval (car passes)) expr))))))
 
 (define compile-program
-  (lambda (name expr)
-    (assemble name (apply-passes expr))
-    (system (format "llvm-as -f -o=~a.o.bc ~a.ll" name name))
-    (system (format "llvm-link -f -o=~a.bc ~a.o.bc lib/espresso.o.bc" name name))
-    (system (format "lli ~a.bc" name))))
+  (lambda (expr . opts)
+    (let ((name (if (null? opts) 'tmp (car opts))))
+      (assemble name (apply-passes expr))
+      (system (format "llvm-as -f -o=~a.o.bc ~a.ll" name name))
+      (system (format "llvm-link -f -o=~a.bc ~a.o.bc lib/espresso.o.bc" name name))
+      (run-program name))))
 
 (define compile-c-program
   (lambda (name)
-        (system (format "clang -emit-llvm -c -o ~a.o.bc ~a.c" name name))
+    (system (format "clang -emit-llvm -c -o ~a.o.bc ~a.c" name name))
     ;; also generate IR representation for debugging
     (system (format "clang -emit-llvm -S -o ~a.ll ~a.c" name name))
     (system (format "llvm-link -f -o=~a.bc ~a.o.bc lib/espresso.o.bc" name name))
-    (system (format "lli ~a.bc" name))))
+    (run-program name)))
+
+(define run-program
+  (lambda (name)
+    (let ((proc (process (format "lli ~a.bc" name))))
+      (read (car proc)))))
+
