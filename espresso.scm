@@ -14,7 +14,7 @@
                  '(pass* ...))
        (set! passes (list 'pass* ...))))))
 
-(enable-passes normalize-program normalize-fixnum normalize-predicate)
+(enable-passes normalize-program normalize-predicate normalize-fixnum)
 
 (define apply-passes
   (lambda (expr)

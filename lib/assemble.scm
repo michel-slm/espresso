@@ -6,6 +6,7 @@
 
 (define assemble:program
   (lambda (out expr)
+    (printf "assembling: ~s\n" expr)
     (cond
      ((and (list? expr) (equal? (car expr) 'program))
       (for-each (assemble:function out) (cadr expr)))
@@ -73,11 +74,59 @@
           (fprintf out "store ~a ~a, ~a* ~a\n" llvm:int expr llvm:int t)
           (fprintf out "~a = load ~a* ~a\n" res llvm:int t)
           res))
+       ((if? expr)
+        (assemble:if out expr))
        ((list? expr)
         ((assemble:app out) expr))
        (else
         (error 'assemble:expr
                "Unknown expression: ~a" expr))))))
+
+(define assemble:if
+  (lambda (out expr)
+    (let ((test   (cadr expr))
+          (conseq (caddr expr))
+          (alt    (cadddr expr)))
+      (unless (equal? (car test) 'eq?)
+        (error 'assemble:if
+               "Test not simplified to eq? form: ~s" test))
+      (let ((res (next-counter "res"))
+            (cmp (next-counter "cmp"))
+            (label-then (next-counter "if.then"))
+            (label-else (next-counter "if.else"))
+            (label-done (next-counter "if.done")))
+        (fprintf out "~a = alloca ~a\n"
+                 res
+                 llvm:int)
+        (fprintf out "~a = icmp eq ~a ~a, ~a\n"
+                 cmp
+                 llvm:int
+                 (cadr test)
+                 (caddr test))
+        (fprintf out "br i1 ~a, label ~a, label ~a\n"
+                 cmp
+                 label-then
+                 label-else)
+        (assemble:if:block out res label-then conseq label-done)
+        (assemble:if:block out res label-else alt label-done)
+        (print-label out label-done)
+        (let ((result (next-counter "if.result")))
+          (fprintf out "~a = load ~a* ~a\n"
+                   result llvm:int res)
+          result)))))
+
+(define assemble:if:block
+  (lambda (out res label expr jump-label)
+    (print-label out label)
+    (let ((val
+           ((assemble:expr out) expr)))
+      (fprintf out "store ~a ~a, ~a* ~a\n"
+               llvm:int
+               val
+               llvm:int
+               res)
+      (fprintf out "br label ~a\n" jump-label))))
+    
 
 (define assemble:function
   (lambda (out)

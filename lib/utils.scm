@@ -23,3 +23,8 @@
 
 (define next-counter (car count-fns))
 (define reset-counter (cadr count-fns))
+
+(define print-label
+  (lambda (out label)
+    (fprintf out "~a:\n"
+             (substring label 1 (string-length label)))))
