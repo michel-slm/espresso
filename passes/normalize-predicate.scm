@@ -2,9 +2,9 @@
   (lambda (prog)
     (let ((res
            `(program ,(map normalize-predicate:fn (cadr prog)))))
-      (printf "normalize-predicate\nbefore: ~s\nafter: ~s\n"
-              prog
-              res)
+      ;;(printf "normalize-predicate\nbefore: ~s\nafter: ~s\n"
+      ;;        prog
+      ;;        res)
       res)))
 
 (define normalize-predicate:fn
@@ -50,10 +50,17 @@ Test cases:
 (define normalize-predicate:if
   (lambda (expr context)
     ;; flip the two branches so we don't need to negate
-    (let ((test ((normalize-predicate:expr 'test) (cadr expr))))
-      `(if ,test
-           ,((normalize-predicate:expr context) (cadddr expr))
-           ,((normalize-predicate:expr context) (caddr expr))))))
+    (let* ((pre-test (cadr expr))
+           (test ((normalize-predicate:expr 'test) pre-test))
+           (conseq
+            ((normalize-predicate:expr context) (caddr expr)))
+           (alt
+            ((normalize-predicate:expr context) (cadddr expr))))
+      ;;(printf "pre-test: ~s\n" pre-test)
+      (cond
+       ((and (list? pre-test) (equal? (car pre-test) 'eq?))
+        `(if ,test ,conseq ,alt))
+       (else `(if ,test ,alt ,conseq))))))
 
 
 (define normalize-predicate:immediate

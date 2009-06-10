@@ -6,7 +6,7 @@
 
 (define assemble:program
   (lambda (out expr)
-    (printf "assembling: ~s\n" expr)
+    ;; (printf "assembling: ~s\n" expr)
     (cond
      ((and (list? expr) (equal? (car expr) 'program))
       (for-each (assemble:function out) (cadr expr)))
@@ -46,11 +46,16 @@
                        ((fx+) 'add)
                        ((fx-) 'sub)
                        ((fx*) 'mul)
-                       (else  'sdiv))
+                       ((fx/)  'sdiv)
+                       ((remainder) 'srem)
+                       (else (error 'assemble:app:primop
+                                    "Support for operator not added: ~a" op)))
+                     
                        llvm:int (car args) arg2)
             (case op
-              ((fx/) (fprintf out "~a = shl ~a ~a, 2\n"
-                              res llvm:int target)))
+              ((fx/)
+               (fprintf out "~a = shl ~a ~a, 2\n"
+                        res llvm:int target)))
             res)
           (else
            (error 'assemble:app:primop
@@ -84,7 +89,7 @@
 
 (define assemble:if
   (lambda (out expr)
-    (let ((test   (cadr expr))
+    (let ((test (cadr expr))
           (conseq (caddr expr))
           (alt    (cadddr expr)))
       (unless (equal? (car test) 'eq?)
@@ -98,22 +103,24 @@
         (fprintf out "~a = alloca ~a\n"
                  res
                  llvm:int)
-        (fprintf out "~a = icmp eq ~a ~a, ~a\n"
-                 cmp
-                 llvm:int
-                 (cadr test)
-                 (caddr test))
-        (fprintf out "br i1 ~a, label ~a, label ~a\n"
-                 cmp
-                 label-then
-                 label-else)
-        (assemble:if:block out res label-then conseq label-done)
-        (assemble:if:block out res label-else alt label-done)
-        (print-label out label-done)
-        (let ((result (next-counter "if.result")))
-          (fprintf out "~a = load ~a* ~a\n"
-                   result llvm:int res)
-          result)))))
+        (let ((v1 ((assemble:expr out) (cadr test)))
+              (v2 ((assemble:expr out) (caddr test))))
+          (fprintf out "~a = icmp eq ~a ~a, ~a\n"
+                   cmp
+                   llvm:int
+                   v1
+                   v2)
+          (fprintf out "br i1 ~a, label ~a, label ~a\n"
+                   cmp
+                   label-then
+                   label-else)
+          (assemble:if:block out res label-then conseq label-done)
+          (assemble:if:block out res label-else alt label-done)
+          (print-label out label-done)
+          (let ((result (next-counter "if.result")))
+            (fprintf out "~a = load ~a* ~a\n"
+                     result llvm:int res)
+            result))))))
 
 (define assemble:if:block
   (lambda (out res label expr jump-label)

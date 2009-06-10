@@ -3,6 +3,8 @@
 (load "lib/assemble.scm")
 (load "lib/utils.scm")
 
+(load "tests.scm")
+
 (define passes)
 
 (define-syntax enable-passes

@@ -16,5 +16,5 @@
 (define binary-prim?
   (lambda (x)
     (case x
-      ((eq? fx+ fx- fx* fx/) #t)
+      ((eq? fx+ fx- fx* fx/ remainder) #t)
       (else #f))))
