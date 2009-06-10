@@ -17,22 +17,43 @@
   (lambda (out)
     (lambda (expr)
       (let* ((arg-regs (map (assemble:arg out) (cdr expr)))
-             (res (make-temp)))
+             (res (next-counter "tmp")))
         
-        (fprintf out "~a = " res)
-        (fprintf out "~a\n"
-                 (if (prim? (car expr))
-                     (assemble:app:primop (car expr) arg-regs)
-                     (assemble:app:call (car expr) arg-regs)))
-        res
-        ))))
+        (if (prim? (car expr))
+            ((assemble:app:primop out) res (car expr) arg-regs)
+            (assemble:app:call res (car expr) arg-regs)))
+        )))
 
 (define assemble:app:primop
-  (lambda (op args)
-    (case op
-      ((fx+) (format "add ~a ~a, ~a\n" llvm:int (car args) (cadr args)))
-      (else (error 'assemble:app:primop
-                   "Unknown primop: ~a" op)))))
+  (lambda (out)
+    (lambda (res op args)
+      (if (binary-prim? op)
+          (let ((arg2
+                 (case op
+                   ((fx*) (let ((reg2 (next-counter "shr")))
+                            (fprintf out "~a = ashr ~a ~a, 2\n"
+                                     reg2 llvm:int (cadr args))
+                            reg2))
+                   (else (cadr args))))
+                (target (case op
+                          ((fx/) (next-counter "tmp"))
+                          (else res))))
+            (fprintf out "~a = " target)
+            (fprintf out
+                     "~a ~a ~a, ~a\n"
+                     (case op
+                       ((fx+) 'add)
+                       ((fx-) 'sub)
+                       ((fx*) 'mul)
+                       (else  'sdiv))
+                       llvm:int (car args) arg2)
+            (case op
+              ((fx/) (fprintf out "~a = shl ~a ~a, 2\n"
+                              res llvm:int target)))
+            res)
+          (else
+           (error 'assemble:app:primop
+                  "Non-binary primops not supported yet: ~a" op))))))
 
 (define assemble:arg
   (lambda (out)
@@ -46,8 +67,8 @@
     (lambda (expr)
       (cond
        ((immediate? expr)
-        (let* ((t (make-temp))
-               (res (make-temp)))
+        (let* ((t (next-counter "tmp"))
+               (res (next-counter "tmp")))
           (fprintf out "~a = alloca ~a\n" t llvm:int)
           (fprintf out "store ~a ~a, ~a* ~a\n" llvm:int expr llvm:int t)
           (fprintf out "~a = load ~a* ~a\n" res llvm:int t)

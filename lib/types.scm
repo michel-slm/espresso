@@ -11,6 +11,10 @@
 
 (define prim?
   (lambda (x)
+    (or (binary-prim? x))))
+
+(define binary-prim?
+  (lambda (x)
     (case x
-      ((fx+ fx-) #t)
+      ((eq? fx+ fx- fx* fx/) #t)
       (else #f))))
