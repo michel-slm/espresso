@@ -1,7 +1,8 @@
 (define immediate?
   (lambda (expr)
     (or (number? expr)
-        (boolean? expr))))
+        (boolean? expr)
+        (null? expr))))
 
 (define if?
   (lambda (expr)

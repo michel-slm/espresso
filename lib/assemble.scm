@@ -9,7 +9,10 @@
     ;; (printf "assembling: ~s\n" expr)
     (cond
      ((and (list? expr) (equal? (car expr) 'program))
-      (for-each (assemble:function out) (cadr expr)))
+      (for-each (assemble:function out) (cadr expr))
+      (for-each (lambda (extfn)
+                  (fprintf out "declare ~a @~a(...)\n" llvm:int extfn))
+                (find-externs expr)))
      (else
       (error 'assemble:program
              "Invalid program: ~a" expr)))))
@@ -22,8 +25,23 @@
         
         (if (prim? (car expr))
             ((assemble:app:primop out) res (car expr) arg-regs)
-            (assemble:app:call res (car expr) arg-regs)))
+            ((assemble:app:call-c out) res (car expr) arg-regs)))
         )))
+
+(define assemble:app:call-c
+  (lambda (out)
+    (lambda (res fn args)
+      (fprintf out "~a = call ~a (...)* @~a("
+               res llvm:int fn)
+      (let loop ((args args))
+        (unless (null? args)
+          (fprintf out "~a ~a" llvm:int (car args))
+          (unless (null? (cdr args))
+            (fprintf out ", "))
+          (loop (cdr args))))
+      (fprintf out ")\n")
+      res
+      )))
 
 (define assemble:app:primop
   (lambda (out)

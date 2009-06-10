@@ -1,6 +1,8 @@
 (load "lib/constants.scm")
 (load "lib/types.scm")
 (load "lib/assemble.scm")
+(load "lib/find-externs.scm")
+
 (load "lib/utils.scm")
 
 (load "tests.scm")
@@ -16,7 +18,10 @@
                  '(pass* ...))
        (set! passes (list 'pass* ...))))))
 
-(enable-passes normalize-program normalize-predicate normalize-fixnum)
+(enable-passes normalize-program
+               normalize-predicate
+               normalize-immediate
+               )
 
 (define apply-passes
   (lambda (expr)
