@@ -14,6 +14,7 @@
     (lambda (expr externs)
       (cond
        ((immediate? expr) externs)
+       ((symbol? expr) externs)
        ((if? expr)
         ;; by this time, the test would be eq?
         ;; just check conseq and alt
@@ -31,7 +32,9 @@
           (if (or (prim? op)
                   (member op fn-names))
               args-res
-              (cons op args-res))))
+              (if (member op args-res)
+                  args-res
+                  (cons op args-res)))))
        (else
         (error 'find-externs:expr
                "Unknown expression type: ~s" expr))))))

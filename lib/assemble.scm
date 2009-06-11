@@ -1,3 +1,5 @@
+(define externs)
+
 (define assemble
   (lambda (name expr)
     (let ((out (open-output-file (format "~a.ll" name) 'replace)))
@@ -5,21 +7,21 @@
       (close-output-port out))))
 
 (define assemble:program
-  (lambda (out expr)
-    ;; (printf "assembling: ~s\n" expr)
+  (lambda (out prog)
     (cond
-     ((and (list? expr) (equal? (car expr) 'program))
-      (for-each (assemble:function out) (cadr expr))
+     ((and (list? prog) (equal? (car prog) 'program))
+      (set! externs (find-externs prog))
+      (for-each (assemble:function out externs) (cadr prog))
       (for-each (lambda (extfn)
                   (fprintf out "declare ~a @~a(...)\n" llvm:int extfn))
-                (find-externs expr)))
+                externs))
      (else
       (error 'assemble:program
-             "Invalid program: ~a" expr)))))
+             "Invalid program: ~a" prog)))))
 
 (define assemble:app
   (lambda (out)
-    (lambda (expr)
+    (trace-lambda a:app (expr)
       (let* ((arg-regs (map (assemble:arg out) (cdr expr)))
              (res (next-counter "tmp")))
         
@@ -31,15 +33,15 @@
 (define assemble:app:call-c
   (lambda (out)
     (lambda (res fn args)
-      (fprintf out "~a = call ~a (...)* @~a("
-               res llvm:int fn)
-      (let loop ((args args))
-        (unless (null? args)
-          (fprintf out "~a ~a" llvm:int (car args))
-          (unless (null? (cdr args))
-            (fprintf out ", "))
-          (loop (cdr args))))
-      (fprintf out ")\n")
+      (fprintf out "~a = call ~a~a @~a"
+               res
+               llvm:int
+               (if (member fn externs)
+                   " (...)*"
+                   "")
+               fn)
+      (assemble:function:arglist out args)
+      (fprintf out "\n")
       res
       )))
 
@@ -88,7 +90,7 @@
 
 (define assemble:expr
   (lambda (out)
-    (lambda (expr)
+    (trace-lambda a:expr (expr)
       (cond
        ((immediate? expr)
         (let* ((t (next-counter "tmp"))
@@ -97,6 +99,7 @@
           (fprintf out "store ~a ~a, ~a* ~a\n" llvm:int expr llvm:int t)
           (fprintf out "~a = load ~a* ~a\n" res llvm:int t)
           res))
+       ((symbol? expr) expr)
        ((if? expr)
         (assemble:if out expr))
        ((list? expr)
@@ -154,22 +157,29 @@
     
 
 (define assemble:function
-  (lambda (out)
-    (lambda (fn)
+  (lambda (out externs)
+    (trace-lambda a:fn (fn)
       (let ((name (car fn))
             (args (cadr fn))
             (bexprs (cddr fn))
             )
         (reset-counter)
-        (fprintf out "define ~a @~a~a {\n"
-                 llvm:int name (assemble:function:arglist args))
+        (fprintf out "define ~a @~a" llvm:int name)
+        (assemble:function:arglist out args)
+        (fprintf out "{\n")
         ;;(for-each (assemble:expr out) bexprs)
         (fprintf out "entry:\n")
         (let ((res ((assemble:expr out) (car bexprs))))
           (fprintf out "ret ~a ~a\n" llvm:int res))
-        (fprintf out "}")))))
+        (fprintf out "}\n\n")))))
 
 (define assemble:function:arglist
-  (lambda (args)
-    ;; todo
-    '()))
+  (lambda (out args)
+    (fprintf out "(")
+    (let loop ((args args))
+      (unless (null? args)
+        (fprintf out "~a ~a" llvm:int (car args))
+        (unless (null? (cdr args))
+          (fprintf out ", "))
+        (loop (cdr args))))
+    (fprintf out ")")))
