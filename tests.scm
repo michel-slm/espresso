@@ -32,3 +32,15 @@
     (compile-program
      (mksrc-collatz-sequence n))))
 
+(define evenp
+  (lambda (n)
+    (compile-program
+     `(letrec ((evenp (lambda (n)
+                        (if (eq? n 0)
+                            #t
+                            (oddp (fx- n 1)))))
+               (oddp (lambda (n)
+                       (if (eq? n 0)
+                           #f
+                           (evenp (fx- n 1))))))
+        (evenp ,n)))))

@@ -21,7 +21,7 @@
 
 (define assemble:app
   (lambda (out)
-    (trace-lambda a:app (expr)
+    (lambda (expr)
       (let* ((arg-regs (map (assemble:arg out) (cdr expr)))
              (res (next-counter "tmp")))
         
@@ -33,7 +33,7 @@
 (define assemble:app:call-c
   (lambda (out)
     (lambda (res fn args)
-      (fprintf out "~a = call ~a~a @~a"
+      (fprintf out "\t~a = call ~a~a @~a"
                res
                llvm:int
                (if (member fn externs)
@@ -52,14 +52,14 @@
           (let ((arg2
                  (case op
                    ((fx*) (let ((reg2 (next-counter "shr")))
-                            (fprintf out "~a = ashr ~a ~a, 2\n"
+                            (fprintf out "\t~a = ashr ~a ~a, 2\n"
                                      reg2 llvm:int (cadr args))
                             reg2))
                    (else (cadr args))))
                 (target (case op
                           ((fx/) (next-counter "tmp"))
                           (else res))))
-            (fprintf out "~a = " target)
+            (fprintf out "\t~a = " target)
             (fprintf out
                      "~a ~a ~a, ~a\n"
                      (case op
@@ -74,7 +74,7 @@
                        llvm:int (car args) arg2)
             (case op
               ((fx/)
-               (fprintf out "~a = shl ~a ~a, 2\n"
+               (fprintf out "\t~a = shl ~a ~a, 2\n"
                         res llvm:int target)))
             res)
           (else
@@ -90,14 +90,14 @@
 
 (define assemble:expr
   (lambda (out)
-    (trace-lambda a:expr (expr)
+    (lambda (expr)
       (cond
        ((immediate? expr)
         (let* ((t (next-counter "tmp"))
                (res (next-counter "tmp")))
-          (fprintf out "~a = alloca ~a\n" t llvm:int)
-          (fprintf out "store ~a ~a, ~a* ~a\n" llvm:int expr llvm:int t)
-          (fprintf out "~a = load ~a* ~a\n" res llvm:int t)
+          (fprintf out "\t~a = alloca ~a\n" t llvm:int)
+          (fprintf out "\tstore ~a ~a, ~a* ~a\n" llvm:int expr llvm:int t)
+          (fprintf out "\t~a = load ~a* ~a\n" res llvm:int t)
           res))
        ((symbol? expr) expr)
        ((if? expr)
@@ -121,17 +121,17 @@
             (label-then (next-counter "if.then"))
             (label-else (next-counter "if.else"))
             (label-done (next-counter "if.done")))
-        (fprintf out "~a = alloca ~a\n"
+        (fprintf out "\t~a = alloca ~a\n"
                  res
                  llvm:int)
         (let ((v1 ((assemble:expr out) (cadr test)))
               (v2 ((assemble:expr out) (caddr test))))
-          (fprintf out "~a = icmp eq ~a ~a, ~a\n"
+          (fprintf out "\t~a = icmp eq ~a ~a, ~a\n"
                    cmp
                    llvm:int
                    v1
                    v2)
-          (fprintf out "br i1 ~a, label ~a, label ~a\n"
+          (fprintf out "\tbr i1 ~a, label ~a, label ~a\n"
                    cmp
                    label-then
                    label-else)
@@ -139,7 +139,7 @@
           (assemble:if:block out res label-else alt label-done)
           (print-label out label-done)
           (let ((result (next-counter "if.result")))
-            (fprintf out "~a = load ~a* ~a\n"
+            (fprintf out "\t~a = load ~a* ~a\n"
                      result llvm:int res)
             result))))))
 
@@ -148,17 +148,17 @@
     (print-label out label)
     (let ((val
            ((assemble:expr out) expr)))
-      (fprintf out "store ~a ~a, ~a* ~a\n"
+      (fprintf out "\tstore ~a ~a, ~a* ~a\n"
                llvm:int
                val
                llvm:int
                res)
-      (fprintf out "br label ~a\n" jump-label))))
+      (fprintf out "\tbr label ~a\n" jump-label))))
     
 
 (define assemble:function
   (lambda (out externs)
-    (trace-lambda a:fn (fn)
+    (lambda (fn)
       (let ((name (car fn))
             (args (cadr fn))
             (bexprs (cddr fn))
@@ -170,7 +170,7 @@
         ;;(for-each (assemble:expr out) bexprs)
         (fprintf out "entry:\n")
         (let ((res ((assemble:expr out) (car bexprs))))
-          (fprintf out "ret ~a ~a\n" llvm:int res))
+          (fprintf out "\tret ~a ~a\n" llvm:int res))
         (fprintf out "}\n\n")))))
 
 (define assemble:function:arglist
