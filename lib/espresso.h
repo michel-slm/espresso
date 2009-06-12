@@ -24,8 +24,8 @@
 #define pair_mask  3
 #define pair_tag   1
 
-void display(int);
-void display_boolean(int);
-void display_pair(int);
+void display(VAL);
+void display_boolean(VAL);
+void display_pair(VAL);
 
 #endif

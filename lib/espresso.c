@@ -36,10 +36,11 @@ VAL booleanp(VAL val) {
 }
 
 // HOFs
-VAL map(VAL (*proc)(VAL), VAL ls) {
+VAL map(VAL proc_addr, VAL ls) {
+  VAL (*proc)(VAL) = (VAL (*) (VAL))proc_addr;
   if (ls == nil) return ls;
   else return cons( (*proc)(car(ls)),
-                    map(proc, cdr(ls)) );
+                    map(proc_addr, cdr(ls)) );
 }
 
 VAL filter(VAL (*pred)(VAL), VAL ls) {

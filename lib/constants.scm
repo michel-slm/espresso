@@ -5,4 +5,7 @@
 
 (define espresso:nil #x2f)
 
-(define llvm:int 'i32)
+(define llvm:int
+  (if (zero? (system "uname -m | grep 64 >/dev/null"))
+      'i64
+      'i32))
