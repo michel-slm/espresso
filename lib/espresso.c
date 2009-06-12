@@ -1,46 +1,60 @@
 #include <stdio.h>
-#include <stdint.h>
 #include <stdlib.h>
 #include "espresso.h"
 
 #include <assert.h>
 
 typedef struct {
-  int32_t a;
-  int32_t d;
+  VAL a;
+  VAL d;
 } pair;
 
 
-int32_t car(int32_t p) {
-  int32_t *a = (int32_t *) (p-1);
+VAL car(VAL p) {
+  VAL *a = (VAL *) (p-1);
   return *a;
 }
 
-int32_t cdr(int32_t p) {
-  int32_t *d = (int32_t *) (p+3);
+VAL cdr(VAL p) {
+  VAL *d = (VAL *) (p+3);
   return *d;
 }
 
-int32_t cons(int32_t a, int32_t d) {
-  void *v = malloc(2*sizeof(int32_t));
+VAL cons(VAL a, VAL d) {
+  void *v = malloc(2*sizeof(VAL));
   
-  int32_t *p = (int32_t *)v;
+  VAL *p = (VAL *)v;
   p[0] = a;
   p[1] = d;
   
-  return (int32_t)p + 1;
+  return (VAL)p + 1;
 }
 
 // predicates
-int32_t booleanp(int32_t val) {
+VAL booleanp(VAL val) {
   return ((val & boolean_mask) == boolean_tag);
 }
 
-int32_t pairp(int32_t val) {
+// HOFs
+VAL map(VAL (*proc)(VAL), VAL ls) {
+  if (ls == nil) return ls;
+  else return cons( (*proc)(car(ls)),
+                    map(proc, cdr(ls)) );
+}
+
+VAL filter(VAL (*pred)(VAL), VAL ls) {
+  if (ls == nil) return ls;
+  else if ((*pred)(car(ls)))
+    return cons(car(ls), filter(pred, cdr(ls)));
+  else return filter(pred, cdr(ls));
+}
+
+
+VAL pairp(VAL val) {
   return ((val & pair_mask) == pair_tag);
 }
 
-void display(int32_t val) {
+void display(VAL val) {
   if ((val & fixnum_mask) == fixnum_tag) {
     printf("%d", (val >> 2));
   } else if (pairp(val)) {
@@ -54,14 +68,14 @@ void display(int32_t val) {
   }
 }
 
-void display_boolean(int32_t val) {
+void display_boolean(VAL val) {
   printf("#%c", (val >> boolean_shift == 1) ? 't' : 'f');
 }
 
-void display_pair(int32_t val) {
+void display_pair(VAL val) {
   printf("(");
   display(car(val));
-  int32_t x = cdr(val);
+  VAL x = cdr(val);
   while (pairp(x)) {
     printf(" ");
     display(car(x));
@@ -74,7 +88,7 @@ void display_pair(int32_t val) {
   printf(")");
 }
 
-int32_t main() {
+VAL main() {
   display(espresso_main());  
   printf("\n");
 }

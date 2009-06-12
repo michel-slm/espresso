@@ -38,12 +38,13 @@ Test cases:
     (case context
       ((test)
        (case (car expr)
-         ((eq?) `(eq? . ,(map (normalize-predicate:expr 'value) (cdr expr))))
+         ((eq? < <= = >= >)
+          `(,(car expr) . ,(map (normalize-predicate:expr 'value) (cdr expr))))
          (else (error 'normalize-predicate:app
                       "Unsupported predicate: ~s" (car expr)))))
       (else
        (case (car expr)
-         ((eq?) `(if ,(normalize-predicate:app expr 'test) #t #f))
+         ((eq? < <= = >= >) `(if ,(normalize-predicate:app expr 'test) #t #f))
          (else
           (map (normalize-predicate:expr context) expr)))))))
 
@@ -58,7 +59,7 @@ Test cases:
             ((normalize-predicate:expr context) (cadddr expr))))
       ;;(printf "pre-test: ~s\n" pre-test)
       (cond
-       ((and (list? pre-test) (equal? (car pre-test) 'eq?))
+       ((and (list? pre-test) (pred? (car pre-test)))
         `(if ,test ,conseq ,alt))
        (else `(if ,test ,alt ,conseq))))))
 

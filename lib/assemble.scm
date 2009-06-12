@@ -113,9 +113,6 @@
     (let ((test (cadr expr))
           (conseq (caddr expr))
           (alt    (cadddr expr)))
-      (unless (equal? (car test) 'eq?)
-        (error 'assemble:if
-               "Test not simplified to eq? form: ~s" test))
       (let ((res (next-counter "res"))
             (cmp (next-counter "cmp"))
             (label-then (next-counter "if.then"))
@@ -126,8 +123,17 @@
                  llvm:int)
         (let ((v1 ((assemble:expr out) (cadr test)))
               (v2 ((assemble:expr out) (caddr test))))
-          (fprintf out "\t~a = icmp eq ~a ~a, ~a\n"
+          (fprintf out "\t~a = icmp ~a ~a ~a, ~a\n"
                    cmp
+                   (case (car test)
+                     ((eq? =) 'eq)
+                     ((<)  'slt)
+                     ((<=) 'sle)
+                     ((>=) 'sge)
+                     ((>)  'sgt)
+                     (else
+                      (error 'assemble:if
+                             "Unknown test operator: ~s" (car test))))
                    llvm:int
                    v1
                    v2)

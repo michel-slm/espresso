@@ -44,3 +44,32 @@
                            #f
                            (evenp (fx- n 1))))))
         (evenp ,n)))))
+
+(define fac
+  (lambda (n)
+    (compile-program
+     `(letrec ((fac (lambda (n)
+                      (if (eq? n 0)
+                          1
+                          (fx* n (fac (fx- n 1)))))))
+        (fac ,n)))))
+
+(define fib
+  (lambda (n)
+    (compile-program
+     `(letrec ((fib (lambda (n)
+                      (if (< n 2)
+                          n
+                          (fx+ (fib (fx- n 1))
+                               (fib (fx- n 2)))))))
+        (fib ,n)))))
+
+(define fib-iter
+  (lambda (n)
+    (compile-program
+     `(letrec ((fib (lambda (a b n)
+                      (if (eq? n 0)
+                          a
+                          (fib b (fx+ a b) (fx- n 1))))))
+        (fib 0 1 ,n)))))
+

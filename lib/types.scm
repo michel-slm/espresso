@@ -10,6 +10,16 @@
          (equal? (car expr) 'if)
          (= (length expr) 4))))
 
+(define pred?
+  (lambda (x)
+    (or (binary-pred? x))))
+
+(define binary-pred?
+  (lambda (x)
+    (case x
+      ((eq? < <= = >= >) #t)
+      (else #f))))
+
 (define prim?
   (lambda (x)
     (or (binary-prim? x))))
