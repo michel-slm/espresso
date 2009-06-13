@@ -30,8 +30,10 @@
                            externs
                            (cdr expr))))
           (if (or (prim? op)
+                  (inttoptr? op)
                   (member op fn-names))
               args-res
+              ;; an extern we've seen before
               (if (member op args-res)
                   args-res
                   (cons op args-res)))))

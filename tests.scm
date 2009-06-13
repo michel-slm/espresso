@@ -79,6 +79,17 @@
      `(letrec ((p ,p-expr))
         (map p ,ls-expr)))))
 
+(define emap2
+  (lambda (p-expr ls-expr)
+    (compile-program
+     `(letrec ((mymap (lambda (f ls)
+                        (if (eq? ls ())
+                            ()
+                            (cons (f (car ls))
+                                  (mymap f (cdr ls))))))
+               (p ,p-expr))
+        (mymap p ,ls-expr)))))
+     
 (define efilter
   (lambda (p-expr ls-expr)
     (compile-program

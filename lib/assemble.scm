@@ -26,22 +26,29 @@
       (let* ((arg-regs (map (assemble:arg out) (cdr expr)))
              (res (next-counter "tmp")))
         
-        (if (prim? (car expr))
-            ((assemble:app:primop out) res (car expr) arg-regs)
-            ((assemble:app:call-c out) res (car expr) arg-regs)))
-        )))
+        (cond
+         ((prim? (car expr))
+          ((assemble:app:primop out) res (car expr) arg-regs))
+         (else
+          (let ((op (if (inttoptr? (car expr))
+                        ((assemble:expr out) (car expr))
+                        (car expr))))
+            ((assemble:app:call-c out) res op arg-regs))))
+        ))))
 
 (define assemble:app:call-c
   (lambda (out)
     (lambda (res fn args)
       (let ((args (assemble:function:normalize-args out args)))
-        (fprintf out "\t~a = call ~a~a @~a"
+        (fprintf out "\t~a = call ~a~a ~a"
                  res
                  llvm:int
                  (if (member fn externs)
                      " (...)*"
                      "")
-                 fn)
+                 (if (and (string? fn) (char=? (string-ref fn 0) #\%))
+                     fn
+                     (format "@~a" fn)))
         (assemble:function:arglist out args))
       (fprintf out "\n")
       res
@@ -104,6 +111,9 @@
        ((symbol? expr) expr)
        ((if? expr)
         (assemble:if out expr))
+       ((and (list? expr)
+             (equal? (car expr) 'inttoptr))
+        (assemble:inttoptr out expr))
        ((list? expr)
         ((assemble:app out) expr))
        (else
@@ -163,6 +173,26 @@
                res)
       (fprintf out "\tbr label ~a\n" jump-label))))
     
+(define assemble:inttoptr
+  (lambda (out expr)
+    (let ((conv (next-counter "conv"))
+          (ptr (cadr expr))
+          (argc (caddr expr)))
+      (fprintf out
+               "\t~a = inttoptr ~a ~a to ~a ("
+               conv
+               llvm:int
+               ptr
+               llvm:int)
+      (let loop ((i argc))
+        (unless (zero? i)
+          (fprintf out "~a" llvm:int)
+          (if (> i 1)
+              (fprintf out " "))
+          (loop (sub1 i))))
+      (fprintf out
+               ")*\n")
+      conv)))
 
 (define assemble:function
   (lambda (out externs)
@@ -200,9 +230,7 @@
              (lambda (fndef)
                (let ((fn-name arg)
                      (fn-argc (length (cadr fndef))))
-                 
-                 (printf "Found function ~a with ~a args\n" fn-name fn-argc)
-                                  (let ((fptr (next-counter "fptr")))
+                 (let ((fptr (next-counter "fptr")))
                    (fprintf out
                             "\t~a = ptrtoint ~a ("
                             fptr

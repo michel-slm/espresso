@@ -10,6 +10,11 @@
          (equal? (car expr) 'if)
          (= (length expr) 4))))
 
+(define inttoptr?
+  (lambda (expr)
+    (and (list? expr)
+         (equal? (car expr) 'inttoptr))))
+
 (define pred?
   (lambda (x)
     (or (binary-pred? x))))

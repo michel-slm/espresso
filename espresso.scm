@@ -19,6 +19,7 @@
        (set! passes (list 'pass* ...))))))
 
 (enable-passes normalize-program
+               normalize-fn-pointer
                normalize-predicate
                normalize-immediate
                )

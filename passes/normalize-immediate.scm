@@ -16,5 +16,6 @@
      ((boolean? expr) (if expr espresso:true espresso:false))
      ((null? expr) espresso:nil)
      ((atom? expr) expr)
+     ((equal? (car expr) 'inttoptr) expr)
      (else
       (map normalize-immediate:expr expr)))))
