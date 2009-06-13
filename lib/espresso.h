@@ -5,8 +5,10 @@
 
 # if __WORDSIZE == 64
 #  define VAL int64_t
+#  define CDR_OFFSET 7
 # else
 #  define VAL int32_t
+#  define CDR_OFFSET 3
 # endif
 
 #define fixnum_mask  3
@@ -27,5 +29,8 @@
 void display(VAL);
 void display_boolean(VAL);
 void display_pair(VAL);
+
+/* exports for espresso/C functions */
+//VAL map(VAL p, VAL ls)
 
 #endif

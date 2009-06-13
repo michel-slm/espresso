@@ -73,3 +73,14 @@
                           (fib b (fx+ a b) (fx- n 1))))))
         (fib 0 1 ,n)))))
 
+(define emap
+  (lambda (p-expr ls-expr)
+    (compile-program
+     `(letrec ((p ,p-expr))
+        (map p ,ls-expr)))))
+
+(define efilter
+  (lambda (p-expr ls-expr)
+    (compile-program
+     `(letrec ((p ,p-expr))
+        (filter p ,ls-expr)))))

@@ -10,6 +10,7 @@
   (lambda (out prog)
     (cond
      ((and (list? prog) (equal? (car prog) 'program))
+      (set! functions (cadr prog))
       (set! externs (find-externs prog))
       (for-each (assemble:function out externs) (cadr prog))
       (for-each (lambda (extfn)
@@ -33,14 +34,15 @@
 (define assemble:app:call-c
   (lambda (out)
     (lambda (res fn args)
-      (fprintf out "\t~a = call ~a~a @~a"
-               res
-               llvm:int
-               (if (member fn externs)
-                   " (...)*"
-                   "")
-               fn)
-      (assemble:function:arglist out args)
+      (let ((args (assemble:function:normalize-args out args)))
+        (fprintf out "\t~a = call ~a~a @~a"
+                 res
+                 llvm:int
+                 (if (member fn externs)
+                     " (...)*"
+                     "")
+                 fn)
+        (assemble:function:arglist out args))
       (fprintf out "\n")
       res
       )))
@@ -189,3 +191,32 @@
           (fprintf out ", "))
         (loop (cdr args))))
     (fprintf out ")")))
+
+(define assemble:function:normalize-args
+  (lambda (out args)
+    (map (lambda (arg)
+           (cond
+            ((assoc arg functions) =>
+             (lambda (fndef)
+               (let ((fn-name arg)
+                     (fn-argc (length (cadr fndef))))
+                 
+                 (printf "Found function ~a with ~a args\n" fn-name fn-argc)
+                                  (let ((fptr (next-counter "fptr")))
+                   (fprintf out
+                            "\t~a = ptrtoint ~a ("
+                            fptr
+                            llvm:int)
+                   (let loop ((i fn-argc))
+                     (unless (zero? i)
+                       (fprintf out "~a" llvm:int)
+                       (if (> i 1)
+                           (fprintf out " "))
+                       (loop (sub1 i))))
+                   (fprintf out ")* @~a to ~a\n"
+                            fn-name
+                            llvm:int)
+                   fptr))))
+
+            (else arg)))
+         args)))

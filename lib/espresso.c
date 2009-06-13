@@ -16,7 +16,7 @@ VAL car(VAL p) {
 }
 
 VAL cdr(VAL p) {
-  VAL *d = (VAL *) (p+3);
+  VAL *d = (VAL *) (p+CDR_OFFSET);
   return *d;
 }
 
@@ -43,11 +43,12 @@ VAL map(VAL proc_addr, VAL ls) {
                     map(proc_addr, cdr(ls)) );
 }
 
-VAL filter(VAL (*pred)(VAL), VAL ls) {
+VAL filter(VAL pred_addr, VAL ls) {
+  VAL (*pred)(VAL) = (VAL (*) (VAL))pred_addr;
   if (ls == nil) return ls;
-  else if ((*pred)(car(ls)))
-    return cons(car(ls), filter(pred, cdr(ls)));
-  else return filter(pred, cdr(ls));
+  else if ((*pred)(car(ls)) != bfalse)
+    return cons(car(ls), filter(pred_addr, cdr(ls)));
+  else return filter(pred_addr, cdr(ls));
 }
 
 

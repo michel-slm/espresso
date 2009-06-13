@@ -1,15 +1,14 @@
 #include "espresso.h"
 
-int map(int (*proc)(int), int ls) {
-  if (ls == nil) return ls;
-  else return cons( (*proc)(car(ls)), 
-		    map(proc, cdr(ls)) );
-}
+VAL map(VAL, VAL);
 
-int add1(int n) {
+VAL add1(VAL n) {
   return n+4;
 }
 
-int espresso_main() {
-  return map(&add1, cons(4, cons(8, cons(12, nil))));
+VAL espresso_main() {
+  VAL (*p_add1)(VAL) = &add1;
+  VAL v_add1 = (VAL) p_add1;
+  //return map(v_add1, nil);
+  return map(v_add1, cons(4, cons(8, cons(12, nil))));
 }
